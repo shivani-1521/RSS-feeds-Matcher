@@ -53,3 +53,53 @@ type (
 )
 
 
+//for matcher interface
+
+type rssMatcher struct{}
+
+//register matcher
+
+func init(){
+	var matcher rssMatcher
+	search.Register("rss", matcher)
+}
+
+func(m rssMatcher) Search(feed *search.Feed, searchTerm string) ([]*search.Result, error){
+	var results []*search.Result
+
+	log.Printf("Search Feed Type [%s], Site [%s] for URI [%s] \n", feed.Type, feed.Name, feed.URI)
+
+	document, err := m.retrieve(feed)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, channelItem := range document.Channel.Item {
+		matched, err := regexp.MatchString(searchTerm, channelItem.Title)
+		if err != nil {
+			return nil, err
+		}
+
+		if matched{
+			results = append(results, &search.Result{
+				Field:	"Title",
+				content: "channelItem.Title",
+			})
+		}
+
+		matched, err = regexp.MatchString(searchTerm, channelItem.Description)
+		if err != nil {
+			return nil, err
+		}
+
+		if matched{
+			results = append(results, &search.Result{
+				Field: "Description",
+				content: "channelItem.Description",
+			})
+		}	
+
+	}
+
+	return results, nil
+}
